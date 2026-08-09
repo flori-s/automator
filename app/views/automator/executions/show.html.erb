@@ -1,0 +1,13 @@
+<h1>Execution #<%= @execution.id %></h1>
+<p>
+  <%= automator_status_badge(@execution.outcome) %>
+  · <%= @execution.event %>
+  · <%= @execution.created_at %>
+</p>
+<p>
+  Flow: <%= @execution.flow ? link_to(@execution.flow.name, flow_path(@execution.flow)) : "—" %>
+  · Job: <%= @execution.job ? link_to("##{@execution.job_id}", job_path(@execution.job)) : "—" %>
+</p>
+
+<h2>Detail</h2>
+<pre><%= pretty_json(@execution.detail) %></pre>

@@ -1,0 +1,37 @@
+# Example automations seed file — copy to host config/automations.yml
+# then run: rails automator:seed
+
+flows:
+  - key: high_value_customer
+    name: High value customer updated
+    enabled: true
+    dry_run: false
+    triggers:
+      - event: customer.updated
+        change_filter:
+          changed: [status]
+    conditions:
+      - kind: structured
+        config:
+          attribute: amount
+          op: gt
+          value: 1000
+    cancel_conditions:
+      - kind: structured
+        config:
+          attribute: status
+          op: eq
+          value: cancelled
+    actions:
+      - kind: builtin
+        builtin_name: webhook
+        options:
+          event: automation.fired
+      - kind: builtin
+        builtin_name: email
+        delay_seconds: 0
+        options:
+          action: rule_notice
+          to: "{{record.email}}"
+          subject: "Update for {{record.name}}"
+          template: rule_notice

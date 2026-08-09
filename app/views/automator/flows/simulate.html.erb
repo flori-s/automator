@@ -1,0 +1,20 @@
+<h1>Simulate flow: <%= @flow.name %></h1>
+<p class="muted">Simulate evaluation without enqueueing side-effecting jobs. Writes a <code>test</code> audit row.</p>
+
+<%= form_with url: run_simulate_flow_path(@flow), method: :post, local: true, class: "stack" do %>
+  <label for="event">Event</label>
+  <input type="text" name="event" id="event" value="<%= params[:event].presence || @flow.triggers.first&.event %>">
+
+  <label for="payload">Payload (JSON)</label>
+  <textarea name="payload" id="payload" rows="16"><%= params[:payload].presence || pretty_json(@sample || {}) %></textarea>
+
+  <div class="actions">
+    <input type="submit" value="Run test">
+    <%= link_to "Back", flow_path(@flow), class: "button secondary" %>
+  </div>
+<% end %>
+
+<% if @result %>
+  <h2>Result</h2>
+  <pre><%= pretty_json(@result) %></pre>
+<% end %>

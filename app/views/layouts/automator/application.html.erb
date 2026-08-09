@@ -1,15 +1,29 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Automator</title>
-  <%= csrf_meta_tags %>
-  <%= csp_meta_tag %>
+  <head>
+    <title>Automator</title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag if respond_to?(:csp_meta_tag) %>
+    <%= stylesheet_link_tag "automator/application", media: "all" %>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand"><%= link_to "Automator", root_path %></div>
+      <nav>
+        <%= link_to "Overview", root_path %>
+        <%= link_to "Flows", flows_path %>
+        <%= link_to "Jobs", jobs_path %>
+        <%= link_to "Executions", executions_path %>
+        <% if Automator::Tenancy.multi_tenant? %>
+          <%= link_to "Tenants", tenants_path %>
+        <% end %>
+      </nav>
+    </header>
 
-  <%= stylesheet_link_tag    "automator/application", media: "all" %>
-</head>
-<body>
-
-<%= yield %>
-
-</body>
+    <main class="container">
+      <% if notice.present? %><p class="flash notice"><%= notice %></p><% end %>
+      <% if alert.present? %><p class="flash alert"><%= alert %></p><% end %>
+      <%= yield %>
+    </main>
+  </body>
 </html>

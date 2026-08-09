@@ -1,0 +1,62 @@
+<h1>Overview</h1>
+<p class="muted">Automation flows, due jobs, and recent activity<%= @multi_tenant ? " (current tenant)" : "" %>.</p>
+
+<div class="actions">
+  <%= button_to "Run sweep now", sweep_path, method: :post, class: "button" %>
+  <%= link_to "New flow", new_flow_path, class: "button secondary" %>
+  <%= link_to "metrics.json", metrics_path, class: "button secondary" %>
+</div>
+
+<div class="grid">
+  <div class="card"><div class="muted">Enabled flows</div><div class="value"><%= @enabled_flows %></div><div class="muted">of <%= @total_flows %></div></div>
+  <div class="card"><div class="muted">Pending jobs</div><div class="value"><%= @pending_jobs %></div></div>
+  <div class="card"><div class="muted">Running</div><div class="value"><%= @running_jobs %></div></div>
+  <div class="card"><div class="muted">Failed</div><div class="value"><%= @failed_jobs %></div></div>
+</div>
+
+<h2>Upcoming jobs</h2>
+<table>
+  <thead><tr><th>Run at</th><th>Flow</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+    <% @upcoming_jobs.each do |job| %>
+      <tr>
+        <td><%= job.run_at %></td>
+        <td><%= job.flow&.name %></td>
+        <td><%= automator_status_badge(job.status) %></td>
+        <td><%= link_to "View", job_path(job) %></td>
+      </tr>
+    <% end %>
+    <% if @upcoming_jobs.empty? %><tr><td colspan="4" class="muted">No pending jobs</td></tr><% end %>
+  </tbody>
+</table>
+
+<h2>Recent failures</h2>
+<table>
+  <thead><tr><th>Finished</th><th>Flow</th><th>Error</th><th></th></tr></thead>
+  <tbody>
+    <% @recent_failures.each do |job| %>
+      <tr>
+        <td><%= job.finished_at %></td>
+        <td><%= job.flow&.name %></td>
+        <td><%= truncate(job.error.to_s, length: 120) %></td>
+        <td><%= link_to "View", job_path(job) %></td>
+      </tr>
+    <% end %>
+    <% if @recent_failures.empty? %><tr><td colspan="4" class="muted">No failures</td></tr><% end %>
+  </tbody>
+</table>
+
+<h2>Recent executions</h2>
+<table>
+  <thead><tr><th>When</th><th>Flow</th><th>Event</th><th>Outcome</th></tr></thead>
+  <tbody>
+    <% @recent_executions.each do |ex| %>
+      <tr>
+        <td><%= ex.created_at %></td>
+        <td><%= ex.flow&.name || "—" %></td>
+        <td><%= ex.event %></td>
+        <td><%= link_to automator_status_badge(ex.outcome), execution_path(ex) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

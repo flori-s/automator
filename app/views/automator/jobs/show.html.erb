@@ -1,0 +1,35 @@
+<h1>Job #<%= @job.id %></h1>
+<p>
+  <%= automator_status_badge(@job.status) %>
+  · flow <%= link_to @job.flow.name, flow_path(@job.flow) %>
+  · run at <%= @job.run_at %>
+</p>
+
+<div class="actions">
+  <% if %w[failed cancelled].include?(@job.status) %>
+    <%= button_to "Retry", retry_job_path(@job), method: :post, class: "button" %>
+  <% end %>
+  <% if @job.status == "pending" %>
+    <%= button_to "Cancel", cancel_job_path(@job), method: :post, class: "button danger" %>
+  <% end %>
+  <%= link_to "All jobs", jobs_path, class: "button secondary" %>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h3>Details</h3>
+    <p>Attempts: <%= @job.attempts %></p>
+    <p>Started: <%= @job.started_at || "—" %></p>
+    <p>Finished: <%= @job.finished_at || "—" %></p>
+    <p>Tenant: <%= @job.tenant || "—" %></p>
+    <p>Idempotency: <code><%= @job.idempotency_key %></code></p>
+    <% if @job.error.present? %><p>Error: <%= @job.error %></p><% end %>
+  </div>
+  <div class="card">
+    <h3>Action</h3>
+    <pre><%= pretty_json(@job.action.attributes.slice("kind", "builtin_name", "handler_key", "options", "delay_seconds")) %></pre>
+  </div>
+</div>
+
+<h2>Payload</h2>
+<pre><%= pretty_json(@job.payload) %></pre>

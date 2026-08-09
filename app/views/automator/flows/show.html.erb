@@ -1,0 +1,48 @@
+<h1><%= @flow.name %></h1>
+<p class="muted"><code><%= @flow.key %></code> · <%= @flow.enabled? ? "enabled" : "disabled" %><% if @flow.dry_run? %> · dry-run<% end %></p>
+<% if @flow.description.present? %><p><%= @flow.description %></p><% end %>
+
+<div class="actions">
+  <%= link_to "Edit", edit_flow_path(@flow), class: "button" %>
+  <%= link_to "Test", simulate_flow_path(@flow), class: "button secondary" %>
+  <%= button_to(@flow.enabled? ? "Disable" : "Enable", toggle_flow_path(@flow), method: :post, class: "button secondary") %>
+  <%= button_to "Delete", flow_path(@flow), method: :delete, class: "button danger", data: { confirm: "Delete this flow?" } %>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h3>Triggers</h3>
+    <ul>
+      <% @flow.triggers.each do |t| %>
+        <li><code><%= t.event %></code><% if t.record_type.present? %> · <%= t.record_type %><% end %></li>
+      <% end %>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Conditions</h3>
+    <pre><%= pretty_json(@flow.conditions.map { |c| { kind: c.kind, config: c.config, predicate_key: c.predicate_key } }) %></pre>
+  </div>
+  <div class="card">
+    <h3>Cancel conditions</h3>
+    <pre><%= pretty_json(@flow.cancel_conditions.map { |c| { kind: c.kind, config: c.config, predicate_key: c.predicate_key } }) %></pre>
+  </div>
+  <div class="card">
+    <h3>Actions</h3>
+    <pre><%= pretty_json(@flow.actions.map { |a| a.attributes.slice("kind", "builtin_name", "handler_key", "delay_seconds", "options") }) %></pre>
+  </div>
+</div>
+
+<h2>Recent jobs</h2>
+<table>
+  <thead><tr><th>ID</th><th>Status</th><th>Run at</th><th></th></tr></thead>
+  <tbody>
+    <% @jobs.each do |job| %>
+      <tr>
+        <td><%= job.id %></td>
+        <td><%= automator_status_badge(job.status) %></td>
+        <td><%= job.run_at %></td>
+        <td><%= link_to "View", job_path(job) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

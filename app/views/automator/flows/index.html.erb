@@ -1,0 +1,34 @@
+<h1>Flows</h1>
+<div class="actions">
+  <%= link_to "New flow", new_flow_path, class: "button" %>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Key</th>
+      <th>Triggers</th>
+      <th>Actions</th>
+      <th>Flags</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @flows.each do |flow| %>
+      <tr>
+        <td><%= link_to flow.name, flow_path(flow) %></td>
+        <td><code><%= flow.key %></code></td>
+        <td><%= flow.triggers.map(&:event).join(", ") %></td>
+        <td><%= flow.actions.map { |a| a.builtin_name || a.handler_key }.compact.join(", ") %></td>
+        <td>
+          <%= automator_status_badge(flow.enabled? ? "enabled" : "disabled") %>
+          <% if flow.dry_run? %><%= automator_status_badge("dry_run") %><% end %>
+        </td>
+        <td>
+          <%= button_to(flow.enabled? ? "Disable" : "Enable", toggle_flow_path(flow), method: :post, class: "button secondary") %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

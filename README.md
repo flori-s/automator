@@ -1,28 +1,115 @@
 # Automator
-Short description and motivation.
 
-## Usage
-How to use my plugin.
+Rails engine gem for **event-driven automation rules** — triggers, conditions, cancel conditions, actions, a DB-backed job sweep (so you don’t need per-rule Delayed Job / Sidekiq scheduling), pluggable webhooks, host mailers, and an ops dashboard.
 
-## Installation
-Add this line to your application's Gemfile:
+Requires **Ruby >= 3.0** and **Rails >= 6.0**.
+
+## Install
 
 ```ruby
-gem "automator"
+# Gemfile
+gem "automator", github: "flori-s/automator"
 ```
 
-And then execute:
 ```bash
-$ bundle
+bundle install
+rails generate automator:install
+rails automator:install:migrations
+rails db:migrate
 ```
 
-Or install it yourself as:
+Mount (also added by the installer):
+
+```ruby
+# config/routes.rb
+mount Automator::Engine => "/automator"
+```
+
+Schedule one cron entry:
+
+```cron
+* * * * * cd /app && bin/rails automator:sweep
+```
+
+## Configure
+
+`config/initializers/automator.rb`:
+
+```ruby
+Automator.configure do |c|
+  c.webhook_url = ENV["AUTOMATOR_WEBHOOK_URL"]
+  c.dashboard_base_url = ENV["AUTOMATOR_DASHBOARD_BASE_URL"]
+  c.mailer = "AutomationMailer"
+
+  # Or use your host webhook service (anomonitor-style):
+  # c.notifier = ->(job, event:, url: nil) {
+  #   Webhook::Broadcast.new(
+  #     urls: [{ url: url.presence || ENV.fetch("AUTOMATOR_DEST_URL"), headers: [
+  #       { name: "Content-Type", value: "application/json" }
+  #     ] }],
+  #     message: Automator::Notifiers.payload(job, event: event)
+  #   ).call
+  # }
+
+  # Multi-tenant (Apartment)
+  # c.tenants = -> { CustomerTenant.pluck(:name) }
+  # c.exclude_tenants = %w[public]
+  # c.tenant_switch = ->(name, &block) { Apartment::Tenant.switch(name, &block) }
+
+  c.authenticate = -> {
+    authenticate_or_request_with_http_basic("Automator") do |user, pass|
+      ActiveSupport::SecurityUtils.secure_compare(user, ENV.fetch("AUTOMATOR_USER")) &&
+        ActiveSupport::SecurityUtils.secure_compare(pass, ENV.fetch("AUTOMATOR_PASSWORD"))
+    end
+  }
+end
+
+Automator.register_predicate(:high_value) { |payload, _ctx|
+  payload.dig("record", "amount").to_f > 1_000
+}
+
+Automator.register_handler(:notify_sales) { |payload, _ctx|
+  # custom side effect
+}
+```
+
+## Emit events
+
+```ruby
+Automator.trigger("customer.updated", customer, changes: customer.previous_changes)
+
+class Customer < ApplicationRecord
+  include Automator::Model
+  automator_events on: [:create, :update] # customer.created / customer.updated
+end
+```
+
+## Seed from YAML or DSL
+
+```ruby
+# config/automations.yml or rake automator:seed
+Automator.draw do
+  flow :remind_before_expiry do
+    trigger "policy.updated", change_filter: { "changed" => ["expiration_date"] }
+    condition attribute: "expiration_date", op: "days_before", value: 7
+    cancel_condition attribute: "status", op: "eq", value: "cancelled"
+    action builtin: "email", action: "rule_notice", to: "{{record.email}}",
+           subject: "Expires soon", template: "rule_notice"
+  end
+end
+```
+
+## Dashboard
+
+Open `/automator` for overview, flows CRUD (structured forms), job queue, executions audit, dry-run/test, and a cross-tenant overview when multi-tenancy is configured.
+
+## Development
+
 ```bash
-$ gem install automator
+bundle install
+bundle exec rake test
 ```
-
-## Contributing
-Contribution directions go here.
 
 ## License
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+
+MIT

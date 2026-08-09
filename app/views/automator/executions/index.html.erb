@@ -1,0 +1,32 @@
+<h1>Executions</h1>
+
+<%= form_with url: executions_path, method: :get, local: true, class: "actions" do %>
+  <select name="outcome">
+    <option value="">All outcomes</option>
+    <% Automator::Execution::OUTCOMES.each do |outcome| %>
+      <option value="<%= outcome %>" <%= "selected" if params[:outcome] == outcome %>><%= outcome %></option>
+    <% end %>
+  </select>
+  <select name="flow_id">
+    <option value="">All flows</option>
+    <% @flows.each do |flow| %>
+      <option value="<%= flow.id %>" <%= "selected" if params[:flow_id].to_s == flow.id.to_s %>><%= flow.name %></option>
+    <% end %>
+  </select>
+  <input type="submit" value="Filter">
+<% end %>
+
+<table>
+  <thead><tr><th>When</th><th>Flow</th><th>Event</th><th>Outcome</th><th></th></tr></thead>
+  <tbody>
+    <% @executions.each do |ex| %>
+      <tr>
+        <td><%= ex.created_at %></td>
+        <td><%= ex.flow&.name || "—" %></td>
+        <td><%= ex.event %></td>
+        <td><%= automator_status_badge(ex.outcome) %></td>
+        <td><%= link_to "View", execution_path(ex) %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

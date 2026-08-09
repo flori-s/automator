@@ -1,0 +1,25 @@
+<h1>Cross-tenant overview</h1>
+<p class="muted">Read-only aggregate. Switch tenant in the host app to manage flows for a specific schema.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Tenant</th>
+      <th>Enabled flows</th>
+      <th>Total flows</th>
+      <th>Pending jobs</th>
+      <th>Failed jobs</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @rows.each do |row| %>
+      <tr>
+        <td><code><%= row[:tenant] %></code></td>
+        <td><%= row[:flows_enabled] %></td>
+        <td><%= row[:flows_total] %></td>
+        <td><%= row[:pending] %></td>
+        <td><%= row[:failed] %></td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>

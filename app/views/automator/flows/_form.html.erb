@@ -1,0 +1,83 @@
+<% if @flow.errors.any? %>
+  <div class="flash alert">
+    <ul><% @flow.errors.full_messages.each do |msg| %><li><%= msg %></li><% end %></ul>
+  </div>
+<% end %>
+
+<%= form_with model: @flow, url: (@flow.persisted? ? flow_path(@flow) : flows_path), local: true, class: "stack", html: { multipart: false } do |f| %>
+  <%= f.label :name %>
+  <%= f.text_field :name %>
+
+  <%= f.label :key %>
+  <%= f.text_field :key %>
+
+  <%= f.label :description %>
+  <%= f.text_area :description, rows: 3 %>
+
+  <%= f.label :tenant %>
+  <%= f.text_field :tenant %>
+
+  <label><%= f.check_box :enabled %> Enabled</label>
+  <label><%= f.check_box :dry_run %> Dry-run (evaluate only, no side effects)</label>
+
+  <h3>Triggers</h3>
+  <%= f.fields_for :triggers do |tf| %>
+    <div class="nested">
+      <%= tf.label :event %>
+      <%= tf.text_field :event, placeholder: "customer.updated" %>
+      <%= tf.label :record_type %>
+      <%= tf.text_field :record_type, placeholder: "Customer" %>
+      <%= tf.label :change_filter, "Change filter (JSON)" %>
+      <%= tf.text_area :change_filter, value: pretty_json(tf.object.change_filter), rows: 4 %>
+      <label><%= tf.check_box :_destroy %> Remove</label>
+    </div>
+  <% end %>
+
+  <h3>Conditions</h3>
+  <%= f.fields_for :conditions do |cf| %>
+    <div class="nested">
+      <%= cf.label :kind %>
+      <%= cf.select :kind, %w[structured custom] %>
+      <%= cf.label :predicate_key %>
+      <%= cf.text_field :predicate_key %>
+      <%= cf.label :config, "Config (JSON)" %>
+      <%= cf.text_area :config, value: pretty_json(cf.object.config), rows: 4, placeholder: '{"attribute":"currency","op":"gt","value":100}' %>
+      <label><%= cf.check_box :_destroy %> Remove</label>
+    </div>
+  <% end %>
+
+  <h3>Cancel conditions</h3>
+  <%= f.fields_for :cancel_conditions do |cf| %>
+    <div class="nested">
+      <%= cf.label :kind %>
+      <%= cf.select :kind, %w[structured custom] %>
+      <%= cf.label :predicate_key %>
+      <%= cf.text_field :predicate_key %>
+      <%= cf.label :config, "Config (JSON)" %>
+      <%= cf.text_area :config, value: pretty_json(cf.object.config), rows: 4 %>
+      <label><%= cf.check_box :_destroy %> Remove</label>
+    </div>
+  <% end %>
+
+  <h3>Actions</h3>
+  <%= f.fields_for :actions do |af| %>
+    <div class="nested">
+      <%= af.label :kind %>
+      <%= af.select :kind, %w[builtin callback] %>
+      <%= af.label :builtin_name %>
+      <%= af.text_field :builtin_name, placeholder: "webhook, email, log, update_attributes" %>
+      <%= af.label :handler_key %>
+      <%= af.text_field :handler_key %>
+      <%= af.label :delay_seconds %>
+      <%= af.number_field :delay_seconds %>
+      <%= af.label :options, "Options (JSON)" %>
+      <%= af.text_area :options, value: pretty_json(af.object.options), rows: 5 %>
+      <label><%= af.check_box :_destroy %> Remove</label>
+    </div>
+  <% end %>
+
+  <div class="actions">
+    <%= f.submit (@flow.persisted? ? "Save flow" : "Create flow") %>
+    <%= link_to "Cancel", (@flow.persisted? ? flow_path(@flow) : flows_path), class: "button secondary" %>
+  </div>
+<% end %>
