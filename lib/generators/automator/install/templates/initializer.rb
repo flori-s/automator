@@ -15,12 +15,9 @@ Automator.configure do |c|
   #   ).call
   # }
 
-  # Host mailer for builtin email actions (implements #notify / #rule_notice, …)
+  # Host mailer for builtin email actions
   # c.mailer = "AutomationMailer"
   # c.email_deliver_later = false
-
-  # Or plug in any host/custom mailer API:
-  # c.email_delivery = ->(message) { MyHostMailer.deliver_from_automator(message) }
 
   # Multi-tenant (Apartment)
   # c.tenants = -> { CustomerTenant.pluck(:name) }

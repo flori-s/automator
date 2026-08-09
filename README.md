@@ -39,15 +39,7 @@ Schedule one cron entry:
 Automator.configure do |c|
   c.webhook_url = ENV["AUTOMATOR_WEBHOOK_URL"]
   c.dashboard_base_url = ENV["AUTOMATOR_DASHBOARD_BASE_URL"]
-
-  # Option A: host mailer class that implements #notify / #rule_notice, etc.
-  # c.mailer = "AutomationMailer"
-
-  # Option B: custom/host mailer API (any signature) via delivery callable
-  # c.email_delivery = ->(message) {
-  #   # message: { to:, subject:, vars:, record:, payload:, action:, ... }
-  #   MyAppMailer.deliver_from_automator(message)
-  # }
+  c.mailer = "AutomationMailer"
 
   # Or use your host webhook service (anomonitor-style):
   # c.notifier = ->(job, event:, url: nil) {
