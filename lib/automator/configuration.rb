@@ -5,7 +5,7 @@ module Automator
     attr_accessor :webhook_url, :dashboard_path, :dashboard_base_url,
                   :tenants, :exclude_tenants, :tenant_switch,
                   :authenticate, :notifier, :mailer, :mailer_deliver,
-                  :poll_lock, :max_attempts, :sweep_batch_size,
+                  :email_delivery, :poll_lock, :max_attempts, :sweep_batch_size,
                   :email_deliver_later
 
     def initialize
@@ -13,6 +13,7 @@ module Automator
       @notifier = nil
       @mailer = nil
       @mailer_deliver = :deliver_now
+      @email_delivery = nil
       @email_deliver_later = false
       @dashboard_path = "/automator"
       @dashboard_base_url = nil
