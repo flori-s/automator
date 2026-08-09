@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-08-09
+
+### Changed
+
+- Flow create/edit form: field hints, placeholders, and JSON examples for key, triggers, conditions, cancel conditions, and actions
+- Empty JSON fields stay blank so placeholders remain visible
+- New/edit flows prebuild an optional cancel-condition row
+
+### Fixed
+
+- Blank nested triggers, conditions, cancel conditions, and actions are rejected on save instead of creating empty records
+
 ## [0.1.0] - 2026-08-09
 
 ### Added
@@ -25,4 +37,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - YAML / DSL seeding (`Automator.draw`, `rake automator:seed`)
 - Install generator, migrations, and README
 
+[0.1.1]: https://github.com/flori-s/automator/releases/tag/v0.1.1
 [0.1.0]: https://github.com/flori-s/automator/releases/tag/v0.1.0

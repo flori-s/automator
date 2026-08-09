@@ -17,8 +17,10 @@ module Automator
       @flow = Flow.new(enabled: true)
       @flow.triggers.build
       @flow.conditions.build
+      @flow.cancel_conditions.build
       @flow.actions.build
     end
+
 
     def create
       @flow = Flow.new(flow_params)
@@ -32,8 +34,10 @@ module Automator
     def edit
       @flow.triggers.build if @flow.triggers.empty?
       @flow.conditions.build if @flow.conditions.empty?
+      @flow.cancel_conditions.build if @flow.cancel_conditions.empty?
       @flow.actions.build if @flow.actions.empty?
     end
+
 
     def update
       if @flow.update(flow_params)

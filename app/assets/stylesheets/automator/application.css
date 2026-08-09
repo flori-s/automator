@@ -77,6 +77,36 @@ form.stack input[type="text"], form.stack input[type="number"], form.stack texta
   border-radius: 6px;
   font: inherit;
 }
+form.stack textarea::placeholder,
+form.stack input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+.hint {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-weight: 400;
+  line-height: 1.4;
+}
+.hint code, .section-help code {
+  font-size: 0.8rem;
+  background: #eef2f6;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  color: #334155;
+}
+.section-help {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+  line-height: 1.45;
+  max-width: 52rem;
+}
+form.stack h3 {
+  margin: 1.75rem 0 0.35rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
 .nested {
   border: 1px dashed var(--line);
   border-radius: 8px;
@@ -84,6 +114,7 @@ form.stack input[type="text"], form.stack input[type="number"], form.stack texta
   margin: 0.75rem 0;
   background: #fbfcfe;
 }
+.nested label:first-child { margin-top: 0; }
 pre {
   background: #0f172a;
   color: #e2e8f0;

@@ -17,6 +17,26 @@ module Automator
     scope :enabled, -> { where(enabled: true) }
     scope :for_tenant, ->(tenant) { tenant.present? ? where(tenant: [nil, tenant]) : all }
 
-    accepts_nested_attributes_for :triggers, :conditions, :cancel_conditions, :actions, allow_destroy: true
+    accepts_nested_attributes_for :triggers, allow_destroy: true,
+                                  reject_if: ->(attrs) { attrs["id"].blank? && attrs["event"].blank? }
+    accepts_nested_attributes_for :conditions, allow_destroy: true,
+                                  reject_if: :blank_nested_condition?
+    accepts_nested_attributes_for :cancel_conditions, allow_destroy: true,
+                                  reject_if: :blank_nested_condition?
+    accepts_nested_attributes_for :actions, allow_destroy: true,
+                                  reject_if: ->(attrs) {
+                                    attrs["id"].blank? &&
+                                      attrs["builtin_name"].blank? &&
+                                      attrs["handler_key"].blank?
+                                  }
+
+    private
+
+    def blank_nested_condition?(attrs)
+      return false if attrs["id"].present?
+
+      config = attrs["config"].to_s.strip
+      attrs["predicate_key"].blank? && (config.blank? || config == "{}" || config == "{\n}")
+    end
   end
 end

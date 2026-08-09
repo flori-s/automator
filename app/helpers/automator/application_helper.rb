@@ -11,5 +11,13 @@ module Automator
     rescue StandardError
       value.inspect
     end
+
+    # Empty hashes/arrays stay blank so placeholders remain visible in forms.
+    def json_field_value(value)
+      return "" if value.blank?
+
+      pretty_json(value)
+    end
   end
 end
+

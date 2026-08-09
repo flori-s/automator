@@ -5,73 +5,151 @@
 <% end %>
 
 <%= form_with model: @flow, url: (@flow.persisted? ? flow_path(@flow) : flows_path), local: true, class: "stack", html: { multipart: false } do |f| %>
-  <%= f.label :name %>
-  <%= f.text_field :name %>
+  <p class="section-help">
+    A flow listens for an event, optionally checks conditions, then runs actions.
+    Start with a name and key, then fill one trigger and one action — leave optional JSON blank if you don’t need it.
+  </p>
 
-  <%= f.label :key %>
-  <%= f.text_field :key %>
+  <%= f.label :name, "Name" %>
+  <p class="hint">Human-readable label shown in the dashboard.</p>
+  <%= f.text_field :name, placeholder: "High value customer updated" %>
 
-  <%= f.label :description %>
-  <%= f.text_area :description, rows: 3 %>
+  <%= f.label :key, "Key" %>
+  <p class="hint">
+    Unique machine id used when seeding or looking up this flow (snake_case). Example:
+    <code>high_value_customer</code>
+  </p>
+  <%= f.text_field :key, placeholder: "high_value_customer" %>
 
-  <%= f.label :tenant %>
-  <%= f.text_field :tenant %>
+  <%= f.label :description, "Description" %>
+  <p class="hint">Optional notes for operators. Not used at runtime.</p>
+  <%= f.text_area :description, rows: 3, placeholder: "Notify sales when a high-value customer changes status." %>
+
+  <%= f.label :tenant, "Tenant" %>
+  <p class="hint">Optional multi-tenant scope (Apartment tenant name). Leave blank to run for all tenants.</p>
+  <%= f.text_field :tenant, placeholder: "acme_corp" %>
 
   <label><%= f.check_box :enabled %> Enabled</label>
   <label><%= f.check_box :dry_run %> Dry-run (evaluate only, no side effects)</label>
 
   <h3>Triggers</h3>
+  <p class="section-help">
+    When should this flow run? Event names usually look like <code>model.action</code>
+    (e.g. <code>customer.updated</code>). Change filter is optional — leave blank to match every event of that type.
+  </p>
   <%= f.fields_for :triggers do |tf| %>
     <div class="nested">
-      <%= tf.label :event %>
+      <%= tf.label :event, "Event" %>
+      <p class="hint">Must match what you emit with <code>Automator.trigger(...)</code> or <code>automator_events</code>.</p>
       <%= tf.text_field :event, placeholder: "customer.updated" %>
-      <%= tf.label :record_type %>
+
+      <%= tf.label :record_type, "Record type" %>
+      <p class="hint">Optional class name of the record, e.g. <code>Customer</code>.</p>
       <%= tf.text_field :record_type, placeholder: "Customer" %>
-      <%= tf.label :change_filter, "Change filter (JSON)" %>
-      <%= tf.text_area :change_filter, value: pretty_json(tf.object.change_filter), rows: 4 %>
+
+      <%= tf.label :change_filter, "Change filter (JSON, optional)" %>
+      <p class="hint">
+        Limit to attribute changes. Examples:
+        <code>{"changed":["status"]}</code>
+        or
+        <code>{"attribute":"status","from":"trial","to":"active"}</code>
+      </p>
+      <%= tf.text_area :change_filter,
+            value: json_field_value(tf.object.change_filter),
+            rows: 4,
+            placeholder: '{"changed":["status"]}' %>
       <label><%= tf.check_box :_destroy %> Remove</label>
     </div>
   <% end %>
 
   <h3>Conditions</h3>
+  <p class="section-help">
+    All conditions must pass before actions run. Use <strong>structured</strong> for attribute checks,
+    or <strong>custom</strong> with a predicate registered via <code>Automator.register_predicate</code>.
+    Leave config blank if you don’t need a condition yet (and remove the row).
+  </p>
   <%= f.fields_for :conditions do |cf| %>
     <div class="nested">
-      <%= cf.label :kind %>
-      <%= cf.select :kind, %w[structured custom] %>
-      <%= cf.label :predicate_key %>
-      <%= cf.text_field :predicate_key %>
+      <%= cf.label :kind, "Kind" %>
+      <%= cf.select :kind, [["Structured (attribute / op / value)", "structured"], ["Custom (registered predicate)", "custom"]] %>
+
+      <%= cf.label :predicate_key, "Predicate key (custom only)" %>
+      <p class="hint">Name passed to <code>Automator.register_predicate(:name)</code>. Leave blank for structured.</p>
+      <%= cf.text_field :predicate_key, placeholder: "high_value" %>
+
       <%= cf.label :config, "Config (JSON)" %>
-      <%= cf.text_area :config, value: pretty_json(cf.object.config), rows: 4, placeholder: '{"attribute":"currency","op":"gt","value":100}' %>
+      <p class="hint">
+        Structured ops: <code>eq</code>, <code>neq</code>, <code>gt</code>, <code>gte</code>, <code>lt</code>, <code>lte</code>,
+        <code>in</code>, <code>present</code>, <code>blank</code>, <code>days_before</code>, <code>days_after</code>.
+        Attributes dig into <code>record.*</code>.
+      </p>
+      <%= cf.text_area :config,
+            value: json_field_value(cf.object.config),
+            rows: 4,
+            placeholder: '{"attribute":"amount","op":"gt","value":1000}' %>
       <label><%= cf.check_box :_destroy %> Remove</label>
     </div>
   <% end %>
 
   <h3>Cancel conditions</h3>
+  <p class="section-help">
+    Optional. If any cancel condition passes while a delayed job is waiting, the job is cancelled
+    (e.g. status became <code>cancelled</code>). Leave the JSON blank to skip.
+  </p>
   <%= f.fields_for :cancel_conditions do |cf| %>
     <div class="nested">
-      <%= cf.label :kind %>
-      <%= cf.select :kind, %w[structured custom] %>
-      <%= cf.label :predicate_key %>
-      <%= cf.text_field :predicate_key %>
+      <%= cf.label :kind, "Kind" %>
+      <%= cf.select :kind, [["Structured (attribute / op / value)", "structured"], ["Custom (registered predicate)", "custom"]] %>
+
+      <%= cf.label :predicate_key, "Predicate key (custom only)" %>
+      <p class="hint">Only needed when kind is custom.</p>
+      <%= cf.text_field :predicate_key, placeholder: "should_cancel" %>
+
       <%= cf.label :config, "Config (JSON)" %>
-      <%= cf.text_area :config, value: pretty_json(cf.object.config), rows: 4 %>
+      <p class="hint">Same shape as conditions, e.g. <code>{"attribute":"status","op":"eq","value":"cancelled"}</code></p>
+      <%= cf.text_area :config,
+            value: json_field_value(cf.object.config),
+            rows: 4,
+            placeholder: '{"attribute":"status","op":"eq","value":"cancelled"}' %>
       <label><%= cf.check_box :_destroy %> Remove</label>
     </div>
   <% end %>
 
   <h3>Actions</h3>
+  <p class="section-help">
+    What to do when the flow matches. Prefer <strong>builtin</strong> (<code>webhook</code>, <code>email</code>, <code>log</code>, <code>update_attributes</code>)
+    or <strong>callback</strong> with a handler from <code>Automator.register_handler</code>.
+    Use <code>{{record.email}}</code>-style templates in option strings.
+  </p>
   <%= f.fields_for :actions do |af| %>
     <div class="nested">
-      <%= af.label :kind %>
-      <%= af.select :kind, %w[builtin callback] %>
-      <%= af.label :builtin_name %>
-      <%= af.text_field :builtin_name, placeholder: "webhook, email, log, update_attributes" %>
-      <%= af.label :handler_key %>
-      <%= af.text_field :handler_key %>
-      <%= af.label :delay_seconds %>
-      <%= af.number_field :delay_seconds %>
+      <%= af.label :kind, "Kind" %>
+      <%= af.select :kind, [["Builtin", "builtin"], ["Callback (registered handler)", "callback"]] %>
+
+      <%= af.label :builtin_name, "Builtin name" %>
+      <p class="hint">One of: <code>webhook</code>, <code>email</code>, <code>log</code>, <code>update_attributes</code>.</p>
+      <%= af.text_field :builtin_name, placeholder: "webhook" %>
+
+      <%= af.label :handler_key, "Handler key (callback only)" %>
+      <p class="hint">Name passed to <code>Automator.register_handler(:name)</code>. Leave blank for builtins.</p>
+      <%= af.text_field :handler_key, placeholder: "notify_sales" %>
+
+      <%= af.label :delay_seconds, "Delay (seconds)" %>
+      <p class="hint">0 = run immediately. Delayed jobs can be cancelled by cancel conditions.</p>
+      <%= af.number_field :delay_seconds, placeholder: "0", min: 0 %>
+
       <%= af.label :options, "Options (JSON)" %>
-      <%= af.text_area :options, value: pretty_json(af.object.options), rows: 5 %>
+      <p class="hint">
+        Examples by builtin —
+        webhook: <code>{"url":"https://…","event":"automation.fired"}</code>;
+        email: <code>{"action":"rule_notice","to":"{{record.email}}","subject":"Hello","template":"rule_notice"}</code>;
+        log: <code>{"message":"Fired for {{record.name}}"}</code>;
+        update_attributes: <code>{"attributes":{"status":"reviewed"}}</code>
+      </p>
+      <%= af.text_area :options,
+            value: json_field_value(af.object.options),
+            rows: 5,
+            placeholder: '{"event":"automation.fired"}' %>
       <label><%= af.check_box :_destroy %> Remove</label>
     </div>
   <% end %>
