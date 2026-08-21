@@ -5,11 +5,18 @@ module Automator
     module EmailAction
       module_function
 
-      def call(action, payload, _job = nil)
+      def call(action, payload, job = nil)
+        opts = Interpolator.call(action.options || {}, payload)
+        context = { action: action, job: job, flow: action.flow }
+
+        if Automator.config.email_sender
+          Automator.config.email_sender.call(opts, payload, context)
+          return true
+        end
+
         mailer = Automator.config.resolve_mailer(action)
         raise "Automator mailer is not configured" unless mailer
 
-        opts = Interpolator.call(action.options || {}, payload)
         method_name = (opts["action"] || opts["template"] || "notify").to_s
         raise "Mailer #{mailer} does not implement ##{method_name}" unless mailer.respond_to?(method_name)
 

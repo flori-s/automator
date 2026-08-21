@@ -14,6 +14,10 @@ module Automator
     validates :name, :key, presence: true
     validates :key, uniqueness: true
 
+    def once_per_group_key
+      once_per_group.presence || key
+    end
+
     scope :enabled, -> { where(enabled: true) }
     scope :for_tenant, ->(tenant) { tenant.present? ? where(tenant: [nil, tenant]) : all }
 

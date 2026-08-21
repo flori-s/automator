@@ -31,7 +31,5 @@ flows:
         builtin_name: email
         delay_seconds: 0
         options:
-          action: rule_notice
-          to: "{{record.email}}"
-          subject: "Update for {{record.name}}"
-          template: rule_notice
+          template_tag: review_request
+          to: "{{subject.email}}"

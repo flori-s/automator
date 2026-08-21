@@ -50,6 +50,7 @@ module Automator
         return []
       end
 
+      payload = Subject.enrich(payload, flow: flow)
       evaluator = ConditionEvaluator.new(payload: payload, context: { flow: flow, event: @event })
       unless evaluator.all_pass?(flow.conditions)
         Execution.record!(flow: flow, event: @event, outcome: "skipped",

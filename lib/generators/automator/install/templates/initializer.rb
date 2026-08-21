@@ -18,6 +18,11 @@ Automator.configure do |c|
   # Host mailer for builtin email actions
   # c.mailer = "AutomationMailer"
   # c.email_deliver_later = false
+  #
+  # Or a host adapter (e.g. DocumentTemplate + DocumentMailer):
+  # c.email_sender = ->(options, payload, context) {
+  #   YourMailAdapter.call(options: options, payload: payload, context: context)
+  # }
 
   # Multi-tenant (Apartment)
   # c.tenants = -> { CustomerTenant.pluck(:name) }

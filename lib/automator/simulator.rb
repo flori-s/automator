@@ -13,9 +13,10 @@ module Automator
     end
 
     def test
+      payload = Subject.enrich(@payload, flow: @flow)
       trigger = @flow.triggers.find { |t| t.event == @event }
-      change_ok = trigger ? trigger.matches_changes?(@payload["changes"]) : false
-      evaluator = ConditionEvaluator.new(payload: @payload, context: { flow: @flow, event: @event })
+      change_ok = trigger ? trigger.matches_changes?(payload["changes"]) : false
+      evaluator = ConditionEvaluator.new(payload: payload, context: { flow: @flow, event: @event })
       conditions = evaluator.breakdown(@flow.conditions)
       cancel = evaluator.breakdown(@flow.cancel_conditions)
       conditions_pass = conditions.all? { |c| c[:pass] }

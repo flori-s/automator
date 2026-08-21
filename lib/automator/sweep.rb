@@ -30,7 +30,7 @@ module Automator
     def process_job(job, tenant)
       return unless job.claim!
 
-      payload = Payload.refresh(job.payload)
+      payload = Subject.enrich(Payload.refresh(job.payload), flow: job.flow)
       flow = job.flow
       evaluator = ConditionEvaluator.new(payload: payload, context: { flow: flow, job: job })
 
@@ -47,6 +47,15 @@ module Automator
         job.cancel!("cancel condition matched")
         Execution.record!(flow: flow, job: job, event: payload["event"], outcome: "cancelled",
                           detail: { reason: "cancel_condition", breakdown: evaluator.breakdown(flow.cancel_conditions) },
+                          tenant: tenant)
+        @processed << job
+        return
+      end
+
+      if (existing = Dedupe.blocking_job(job.dedupe_key, except_id: job.id))
+        job.cancel!("once_per already #{existing.status}")
+        Execution.record!(flow: flow, job: job, event: payload["event"], outcome: "cancelled",
+                          detail: { reason: "once_per", dedupe_key: job.dedupe_key, existing_job_id: existing.id },
                           tenant: tenant)
         @processed << job
         return

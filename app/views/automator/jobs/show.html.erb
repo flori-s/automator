@@ -23,6 +23,7 @@
     <p>Finished: <%= @job.finished_at || "—" %></p>
     <p>Tenant: <%= @job.tenant || "—" %></p>
     <p>Idempotency: <code><%= @job.idempotency_key %></code></p>
+    <p>Dedupe: <code><%= @job.dedupe_key.presence || "—" %></code></p>
     <% if @job.error.present? %><p>Error: <%= @job.error %></p><% end %>
   </div>
   <div class="card">

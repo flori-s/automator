@@ -40,6 +40,8 @@ Automator.configure do |c|
   c.webhook_url = ENV["AUTOMATOR_WEBHOOK_URL"]
   c.dashboard_base_url = ENV["AUTOMATOR_DASHBOARD_BASE_URL"]
   c.mailer = "AutomationMailer"
+  # Or a host adapter (DocumentTemplate / DocumentMailer, etc):
+  # c.email_sender = ->(options, payload, context) { YourMailAdapter.call(...) }
 
   # Or use your host webhook service (anomonitor-style):
   # c.notifier = ->(job, event:, url: nil) {
@@ -95,6 +97,13 @@ Automator.draw do
     cancel_condition attribute: "status", op: "eq", value: "cancelled"
     action builtin: "email", action: "rule_notice", to: "{{record.email}}",
            subject: "Expires soon", template: "rule_notice"
+  end
+
+  flow :review_after_new_customer, once_per: "{{subject.id}}", once_per_group: "review_request" do
+    trigger "customer.created"
+    condition attribute: "email", op: "present"
+    action builtin: "email", delay_seconds: 1_209_600, template_tag: "review_request",
+           to: "{{subject.email}}"
   end
 end
 ```

@@ -9,7 +9,7 @@ module Automator
     def initialize(flow:, action:, payload:, event:, tenant: nil)
       @flow = flow
       @action = action
-      @payload = payload
+      @payload = Payload.stringify(payload || {})
       @event = event
       @tenant = tenant
     end
@@ -24,6 +24,17 @@ module Automator
           tenant: @tenant
         )
         return nil
+      end
+
+      payload = Subject.enrich(@payload, flow: @flow)
+      dedupe_key = Dedupe.key_for(flow: @flow, payload: payload, tenant: @tenant)
+      if (existing = Dedupe.blocking_job(dedupe_key))
+        Execution.record!(
+          flow: @flow, job: existing, event: @event, outcome: "skipped",
+          detail: { reason: "once_per", dedupe_key: dedupe_key, existing_job_id: existing.id },
+          tenant: @tenant
+        )
+        return existing
       end
 
       run_at = Time.current + @action.delay_seconds.to_i
@@ -41,14 +52,16 @@ module Automator
         action: @action,
         status: "pending",
         run_at: run_at,
-        payload: @payload.merge("event" => @event),
+        payload: payload.merge("event" => @event),
         tenant: @tenant,
-        attempts: 0
+        attempts: 0,
+        dedupe_key: dedupe_key
       )
       job.save!
 
       Execution.record!(flow: @flow, job: job, event: @event, outcome: "enqueued",
-                        detail: { action_id: @action.id, run_at: run_at.iso8601 }, tenant: @tenant)
+                        detail: { action_id: @action.id, run_at: run_at.iso8601, dedupe_key: dedupe_key },
+                        tenant: @tenant)
       job
     end
 

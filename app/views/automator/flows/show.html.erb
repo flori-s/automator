@@ -1,6 +1,16 @@
 <h1><%= @flow.name %></h1>
 <p class="muted"><code><%= @flow.key %></code> · <%= @flow.enabled? ? "enabled" : "disabled" %><% if @flow.dry_run? %> · dry-run<% end %></p>
 <% if @flow.description.present? %><p><%= @flow.description %></p><% end %>
+<% if @flow.subject_association.present? || @flow.once_per.present? %>
+  <p class="muted">
+    <% if @flow.subject_association.present? %>subject: <code><%= @flow.subject_association %></code><% end %>
+    <% if @flow.once_per.present? %>
+      <% if @flow.subject_association.present? %> · <% end %>
+      once per <code><%= @flow.once_per %></code>
+      <% if @flow.once_per_group.present? %>(group <code><%= @flow.once_per_group %></code>)<% end %>
+    <% end %>
+  </p>
+<% end %>
 
 <div class="actions">
   <%= link_to "Edit", edit_flow_path(@flow), class: "button" %>

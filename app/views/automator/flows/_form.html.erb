@@ -32,6 +32,28 @@
   <label><%= f.check_box :enabled %> Enabled</label>
   <label><%= f.check_box :dry_run %> Dry-run (evaluate only, no side effects)</label>
 
+  <%= f.label :subject_association, "Subject association" %>
+  <p class="hint">
+    Optional. When the trigger record is not the thing you want to email or de-dupe on
+    (e.g. a claim belonging to a customer), set this to the association name such as
+    <code>customer</code>. Payload then includes <code>subject</code> / <code>subject.id</code>.
+    Leave blank to use the triggering record as the subject.
+  </p>
+  <%= f.text_field :subject_association, placeholder: "customer" %>
+
+  <%= f.label :once_per, "Once per (template)" %>
+  <p class="hint">
+    Lifetime uniqueness. Interpolated from the payload, e.g. <code>{{subject.id}}</code>.
+    A second matching event will not enqueue while a job for this key is pending, running, or succeeded.
+  </p>
+  <%= f.text_field :once_per, placeholder: "{{subject.id}}" %>
+
+  <%= f.label :once_per_group, "Once-per group" %>
+  <p class="hint">
+    Share uniqueness across flows (e.g. <code>review_request</code>). Defaults to this flow’s key.
+  </p>
+  <%= f.text_field :once_per_group, placeholder: "review_request" %>
+
   <h3>Triggers</h3>
   <p class="section-help">
     When should this flow run? Event names usually look like <code>model.action</code>
@@ -142,7 +164,8 @@
       <p class="hint">
         Examples by builtin —
         webhook: <code>{"url":"https://…","event":"automation.fired"}</code>;
-        email: <code>{"action":"rule_notice","to":"{{record.email}}","subject":"Hello","template":"rule_notice"}</code>;
+        email: <code>{"template_tag":"review_request","to":"{{subject.email}}"}</code>
+        (or ActionMailer: <code>{"action":"rule_notice","to":"{{record.email}}"}</code>);
         log: <code>{"message":"Fired for {{record.name}}"}</code>;
         update_attributes: <code>{"attributes":{"status":"reviewed"}}</code>
       </p>

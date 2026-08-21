@@ -3,6 +3,8 @@
 require "test_helper"
 
 class AutomatorRuntimeTest < ActiveSupport::TestCase
+  include ActiveSupport::Testing::TimeHelpers
+
   setup do
     Automator.reset_config!
     Automator::Registry.clear!
@@ -209,6 +211,152 @@ class AutomatorRuntimeTest < ActiveSupport::TestCase
     Automator.sweep
     assert_equal 42, seen
     assert_equal "succeeded", job.reload.status
+  end
+
+  test "once_per skips a second flow in the same group" do
+    first = create_flow!(key: "review-a-#{SecureRandom.hex(4)}", once_per: "{{subject.id}}", once_per_group: "review_request")
+    first.triggers.create!(event: "customer.created")
+    first.actions.create!(kind: "builtin", builtin_name: "log", options: {})
+
+    second = create_flow!(key: "review-b-#{SecureRandom.hex(4)}", once_per: "{{subject.id}}", once_per_group: "review_request")
+    second.triggers.create!(event: "schade.updated")
+    second.actions.create!(kind: "builtin", builtin_name: "log", options: {})
+
+    payload = { "record_type" => "Customer", "record_id" => 7, "record" => { "id" => 7, "email" => "a@b.c" } }
+
+    jobs = Automator.trigger("customer.created", payload)
+    assert_equal 1, jobs.compact.size
+    assert_equal "pending", jobs.first.status
+    refute_nil jobs.first.dedupe_key
+
+    Automator.trigger("schade.updated", payload)
+    assert_equal 1, Automator::Job.count
+    assert Automator::Execution.where(outcome: "skipped").any? { |e| e.detail["reason"] == "once_per" }
+  end
+
+  test "once_per allows a new job after the previous one was cancelled" do
+    flow = create_flow!(once_per: "{{subject.id}}", once_per_group: "review_request")
+    flow.triggers.create!(event: "customer.created")
+    flow.actions.create!(kind: "builtin", builtin_name: "log", options: {})
+
+    payload = { "record_id" => 8, "record" => { "id" => 8 } }
+    first = Automator.trigger("customer.created", payload).compact.first
+    first.cancel!("no longer eligible")
+
+    travel 2.minutes do
+      second_jobs = Automator.trigger("customer.created", payload)
+      assert_equal 2, Automator::Job.count
+      assert_equal "pending", second_jobs.compact.first.status
+    end
+  end
+
+  test "sweep cancels when another job in the group already succeeded" do
+    group = "review_request"
+    winner = create_flow!(once_per: "{{subject.id}}", once_per_group: group)
+    winner_action = winner.actions.create!(kind: "builtin", builtin_name: "log", options: {})
+    Automator::Job.create!(
+      flow: winner,
+      action: winner_action,
+      status: "succeeded",
+      run_at: 1.hour.ago,
+      payload: { "subject" => { "id" => 9 } },
+      idempotency_key: "winner-1",
+      dedupe_key: "#{group}:9"
+    )
+
+    loser = create_flow!(once_per: "{{subject.id}}", once_per_group: group)
+    loser_action = loser.actions.create!(kind: "builtin", builtin_name: "log", options: {})
+    pending = Automator::Job.create!(
+      flow: loser,
+      action: loser_action,
+      status: "pending",
+      run_at: 1.minute.ago,
+      payload: { "subject" => { "id" => 9 }, "event" => "x" },
+      idempotency_key: "loser-1",
+      dedupe_key: "#{group}:9"
+    )
+
+    Automator.sweep
+    assert_equal "cancelled", pending.reload.status
+  end
+
+  test "email_sender is used for builtin email actions" do
+    seen = nil
+    Automator.configure do |c|
+      c.email_sender = ->(options, payload, _context) { seen = [options["to"], payload.dig("subject", "id")] }
+    end
+
+    flow = create_flow!
+    action = flow.actions.create!(
+      kind: "builtin",
+      builtin_name: "email",
+      options: { "to" => "{{subject.email}}", "template_tag" => "review_request" }
+    )
+    job = Automator::Job.create!(
+      flow: flow,
+      action: action,
+      status: "pending",
+      run_at: 1.minute.ago,
+      payload: { "subject" => { "id" => 11, "email" => "pat@example.com" }, "event" => "x" },
+      idempotency_key: "email-1"
+    )
+
+    Automator.sweep
+    assert_equal "succeeded", job.reload.status
+    assert_equal ["pat@example.com", 11], seen
+  end
+
+  test "subject association is copied onto the payload" do
+    customer = Struct.new(:id, :email, :attributes).new(42, "pat@example.com", { "id" => 42, "email" => "pat@example.com" })
+    claim_class = Class.new do
+      def self.find_by(id:)
+        @records&.[](id.to_i)
+      end
+
+      def self.store(record)
+        @records ||= {}
+        @records[record.id] = record
+      end
+
+      attr_reader :id, :customer, :attributes
+
+      def initialize(id, customer)
+        @id = id
+        @customer = customer
+        @attributes = { "id" => id }
+      end
+    end
+
+    Object.send(:remove_const, :ClaimStub) if Object.const_defined?(:ClaimStub)
+    Object.const_set(:ClaimStub, claim_class)
+    claim = ClaimStub.new(5, customer)
+    ClaimStub.store(claim)
+
+    flow = create_flow!(subject_association: "customer", once_per: "{{subject.id}}")
+    payload = Automator::Subject.enrich(
+      { "record_type" => "ClaimStub", "record_id" => 5, "record" => { "id" => 5 } },
+      flow: flow
+    )
+
+    assert_equal 42, payload["subject_id"]
+    assert_equal "pat@example.com", payload.dig("subject", "email")
+    assert_equal "42", Automator::Dedupe.key_for(flow: flow, payload: payload).split(":").last
+  ensure
+    Object.send(:remove_const, :ClaimStub) if Object.const_defined?(:ClaimStub)
+  end
+
+  test "seed from dsl stores once_per fields" do
+    Automator.draw do
+      flow :review, once_per: "{{subject.id}}", once_per_group: "review_request", subject_association: "customer" do
+        trigger "schade.updated"
+        action builtin: "log", message: "review"
+      end
+    end
+
+    flow = Automator::Flow.find_by!(key: "review")
+    assert_equal "{{subject.id}}", flow.once_per
+    assert_equal "review_request", flow.once_per_group
+    assert_equal "customer", flow.subject_association
   end
 
   private

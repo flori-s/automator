@@ -31,7 +31,10 @@ module Automator
         enabled: definition.key?("enabled") ? definition["enabled"] : true,
         dry_run: definition["dry_run"] || false,
         description: definition["description"],
-        tenant: definition["tenant"]
+        tenant: definition["tenant"],
+        once_per: definition["once_per"],
+        once_per_group: definition["once_per_group"],
+        subject_association: definition["subject_association"]
       )
       flow.save!
 
@@ -102,22 +105,28 @@ module Automator
         @flows = []
       end
 
-      def flow(key, name: nil, enabled: true, dry_run: false, tenant: nil, description: nil, &block)
+      def flow(key, name: nil, enabled: true, dry_run: false, tenant: nil, description: nil,
+               once_per: nil, once_per_group: nil, subject_association: nil, &block)
         fb = FlowBuilder.new(key, name: name || key.to_s.humanize, enabled: enabled, dry_run: dry_run,
-                                  tenant: tenant, description: description)
+                                  tenant: tenant, description: description, once_per: once_per,
+                                  once_per_group: once_per_group, subject_association: subject_association)
         fb.instance_eval(&block) if block
         @flows << fb.to_h
       end
     end
 
     class FlowBuilder
-      def initialize(key, name:, enabled:, dry_run:, tenant:, description:)
+      def initialize(key, name:, enabled:, dry_run:, tenant:, description:,
+                     once_per: nil, once_per_group: nil, subject_association: nil)
         @key = key.to_s
         @name = name
         @enabled = enabled
         @dry_run = dry_run
         @tenant = tenant
         @description = description
+        @once_per = once_per
+        @once_per_group = once_per_group
+        @subject_association = subject_association
         @triggers = []
         @conditions = []
         @cancel_conditions = []
@@ -162,6 +171,9 @@ module Automator
           "dry_run" => @dry_run,
           "tenant" => @tenant,
           "description" => @description,
+          "once_per" => @once_per,
+          "once_per_group" => @once_per_group,
+          "subject_association" => @subject_association,
           "triggers" => @triggers,
           "conditions" => @conditions,
           "cancel_conditions" => @cancel_conditions,

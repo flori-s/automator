@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-21
+
+### Added
+
+- Flow `once_per` / `once_per_group` lifetime uniqueness (jobs ledger via `dedupe_key`)
+- Flow `subject_association` enriches the payload with `subject` / `subject_id` / `subject_type`
+- Pluggable `c.email_sender` for builtin email actions (host DocumentMailer / template adapters)
+
 ## [0.1.1] - 2026-08-09
 
 ### Changed
@@ -37,5 +45,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - YAML / DSL seeding (`Automator.draw`, `rake automator:seed`)
 - Install generator, migrations, and README
 
+[0.2.0]: https://github.com/flori-s/automator/releases/tag/v0.2.0
 [0.1.1]: https://github.com/flori-s/automator/releases/tag/v0.1.1
 [0.1.0]: https://github.com/flori-s/automator/releases/tag/v0.1.0

@@ -82,6 +82,7 @@ module Automator
     def flow_params
       params.require(:flow).permit(
         :name, :key, :enabled, :dry_run, :description, :tenant,
+        :once_per, :once_per_group, :subject_association,
         triggers_attributes: [:id, :event, :record_type, :change_filter, :position, :_destroy],
         conditions_attributes: [:id, :kind, :config, :predicate_key, :position, :_destroy],
         cancel_conditions_attributes: [:id, :kind, :config, :predicate_key, :position, :_destroy],

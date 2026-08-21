@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_08_09_120000) do
+ActiveRecord::Schema[7.1].define(version: 2026_08_21_120000) do
   create_table "automator_actions", force: :cascade do |t|
     t.integer "flow_id", null: false
     t.string "kind", default: "builtin", null: false
@@ -70,8 +70,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_09_120000) do
     t.string "tenant"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "once_per"
+    t.string "once_per_group"
+    t.string "subject_association"
     t.index ["enabled"], name: "index_automator_flows_on_enabled"
     t.index ["key"], name: "index_automator_flows_on_key", unique: true
+    t.index ["once_per_group"], name: "index_automator_flows_on_once_per_group"
     t.index ["tenant"], name: "index_automator_flows_on_tenant"
   end
 
@@ -89,7 +93,9 @@ ActiveRecord::Schema[7.1].define(version: 2026_08_09_120000) do
     t.datetime "finished_at", precision: nil
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "dedupe_key"
     t.index ["action_id"], name: "index_automator_jobs_on_action_id"
+    t.index ["dedupe_key"], name: "index_automator_jobs_on_dedupe_key"
     t.index ["flow_id"], name: "index_automator_jobs_on_flow_id"
     t.index ["idempotency_key"], name: "index_automator_jobs_on_idempotency_key", unique: true
     t.index ["run_at"], name: "index_automator_jobs_on_run_at"
