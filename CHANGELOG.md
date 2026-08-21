@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Flow `once_per` / `once_per_group` lifetime uniqueness (jobs ledger via `dedupe_key`)
 - Flow `subject_association` enriches the payload with `subject` / `subject_id` / `subject_type`
 - Pluggable `c.email_sender` for builtin email actions (host DocumentMailer / template adapters)
+- Structured `eq false` matches nil (boolean columns that are unset). Conditions and `{{tokens}}` resolve methods on the live record when the attribute is not a table column.
 
 ## [0.1.1] - 2026-08-09
 

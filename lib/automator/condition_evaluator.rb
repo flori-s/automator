@@ -51,8 +51,8 @@ module Automator
       actual = dig(attribute)
 
       case op
-      when "eq" then cast(actual) == cast(value)
-      when "neq" then cast(actual) != cast(value)
+      when "eq" then eq?(actual, value)
+      when "neq" then neq?(actual, value)
       when "gt"
         left, right = ordered(actual, value)
         left > right
@@ -92,13 +92,73 @@ module Automator
     def dig(path)
       return @payload if path.blank?
 
+      from_payload = payload_dig(path)
+      return from_payload unless payload_missing?(from_payload)
+
+      live = LiveLookup.read(@payload, path, flow: @context[:flow])
+      live.nil? ? from_payload : live
+    end
+
+    def payload_dig(path)
       parts = path.to_s.split(".")
-      # Prefer record.* convenience
       if parts.first == "record"
         @payload.dig(*parts)
       else
         @payload.dig("record", *parts) || @payload.dig(*parts)
       end
+    end
+
+    def payload_missing?(value)
+      value.nil? || value == ""
+    end
+
+    # eq false matches nil/false (IS NOT TRUE). neq false matches nil/true (IS NOT FALSE).
+    def eq?(actual, expected)
+      return boolean_eq?(actual, expected) if boolean_compare?(actual, expected)
+
+      cast(actual) == cast(expected)
+    end
+
+    def neq?(actual, expected)
+      return boolean_neq?(actual, expected) if boolean_compare?(actual, expected)
+
+      cast(actual) != cast(expected)
+    end
+
+    def boolean_compare?(actual, expected)
+      boolean_literal?(expected) && (actual.nil? || boolean_literal?(actual))
+    end
+
+    def boolean_literal?(value)
+      value == true || value == false || %w[true false].include?(value.to_s.downcase)
+    end
+
+    def boolean_eq?(actual, expected)
+      expected_bool = to_bool(expected)
+      actual_bool = to_bool(actual)
+      if expected_bool == false
+        actual_bool != true
+      else
+        actual_bool == true
+      end
+    end
+
+    def boolean_neq?(actual, expected)
+      expected_bool = to_bool(expected)
+      actual_bool = to_bool(actual)
+      if expected_bool == false
+        actual_bool != false
+      else
+        actual_bool != true
+      end
+    end
+
+    def to_bool(value)
+      return nil if value.nil? || value == ""
+      return false if value == false || value.to_s.downcase == "false"
+      return true if value == true || value.to_s.downcase == "true"
+
+      nil
     end
 
     def cast(value)

@@ -160,6 +160,60 @@ class AutomatorRuntimeTest < ActiveSupport::TestCase
     assert evaluator.evaluate(condition)
   end
 
+  test "eq false matches nil boolean columns" do
+    evaluator = Automator::ConditionEvaluator.new(
+      payload: { "record" => { "prospect" => nil, "deceased" => nil } }
+    )
+    refute evaluator.evaluate(Automator::Condition.new(kind: "structured", config: { "attribute" => "prospect", "op" => "eq", "value" => true }))
+    assert evaluator.evaluate(Automator::Condition.new(kind: "structured", config: { "attribute" => "prospect", "op" => "eq", "value" => false }))
+    assert evaluator.evaluate(Automator::Condition.new(kind: "structured", config: { "attribute" => "deceased", "op" => "eq", "value" => false }))
+  end
+
+  test "neq false still matches nil" do
+    evaluator = Automator::ConditionEvaluator.new(
+      payload: { "record" => { "emailcommunication" => nil } }
+    )
+    assert evaluator.evaluate(Automator::Condition.new(kind: "structured", config: { "attribute" => "emailcommunication", "op" => "neq", "value" => false }))
+  end
+
+  test "present reads a live method missing from attributes" do
+    person_class = Class.new do
+      def self.find_by(id:)
+        @records&.[](id.to_i)
+      end
+
+      def self.store(record)
+        @records ||= {}
+        @records[record.id] = record
+      end
+
+      attr_reader :id, :attributes
+
+      def initialize(id)
+        @id = id
+        @attributes = { "id" => id, "prospect" => nil }
+      end
+
+      def email
+        "pat@example.com"
+      end
+    end
+
+    Object.send(:remove_const, :PersonStub) if Object.const_defined?(:PersonStub)
+    Object.const_set(:PersonStub, person_class)
+    PersonStub.store(PersonStub.new(3))
+
+    evaluator = Automator::ConditionEvaluator.new(
+      payload: { "record_type" => "PersonStub", "record_id" => 3, "record" => { "id" => 3, "prospect" => nil } }
+    )
+    assert evaluator.evaluate(Automator::Condition.new(kind: "structured", config: { "attribute" => "email", "op" => "present" }))
+    assert_equal "pat@example.com", Automator::Interpolator.call("{{record.email}}", {
+      "record_type" => "PersonStub", "record_id" => 3, "record" => { "id" => 3 }
+    })
+  ensure
+    Object.send(:remove_const, :PersonStub) if Object.const_defined?(:PersonStub)
+  end
+
   test "tenancy each yields once when not configured" do
     names = []
     Automator::Tenancy.each { |name| names << name }

@@ -6,7 +6,7 @@ module Automator
       module_function
 
       def call(action, payload, job = nil)
-        opts = Interpolator.call(action.options || {}, payload)
+        opts = Interpolator.call(action.options || {}, payload, flow: action.flow)
         context = { action: action, job: job, flow: action.flow }
 
         if Automator.config.email_sender
